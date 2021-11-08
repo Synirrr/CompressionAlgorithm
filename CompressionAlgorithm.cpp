@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <assert.h>
 using namespace std;
 
 
@@ -12,6 +13,11 @@ typedef uint8_t BYTE;
 
 unsigned int byte_compress(BYTE *data_ptr, unsigned int size)
 {
+    if (data_ptr == NULL || size == 0)
+    {
+        cerr << "Invalid data given please re-enter valid populated BYTE array or a size greater than zero." << endl;
+        return 0;
+    }
     // Read in first byte and set temp variables
     vector<BYTE> vTemp;
 
@@ -20,12 +26,11 @@ unsigned int byte_compress(BYTE *data_ptr, unsigned int size)
     for (unsigned int index = 0; index <= size - 1;)
     {
         BYTE current = data_ptr[index];
-        unsigned int length;
+        unsigned int length = 0;
         // If the next byte is different copy just current byte to new array
         if (data_ptr[index + 1] != current)
         {
             vTemp.push_back(current);
-            cout << "index is: " << (uint64_t)index << endl;
             index++;
         }
         // If the next byte is the same check the next byte until a different one is found. Record the length of the series.
@@ -43,7 +48,7 @@ unsigned int byte_compress(BYTE *data_ptr, unsigned int size)
                     // Determine if we need more bytes for length
                     if (length > 8)
                     {
-                        unsigned int numBytes = ceil(((double)length - 8) / 255);
+                        unsigned int numBytes = ceil((double)((length - 8) / 255));
                         // Shift the bits to fill a byte containing 4 bits (7-4) telling us how many bytes are used for length and 4 bits (3-0) telling us the length
                         BYTE controlByte = (numBytes << 4) | 8;
                         // Remove already allocated length
@@ -78,14 +83,34 @@ unsigned int byte_compress(BYTE *data_ptr, unsigned int size)
 int main()
 {
     //Initialize input data
-    // Data before the call
-    BYTE data_ptr[] = { 0x03, 0x74, 0x04, 0x04, 0x04, 0x35, 0x35, 0x64, 0x64, 0x64, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09 };
-    unsigned int data_size = 36;
+ 
+    // Data before the call positive path
+    BYTE data_ptr_pos[] = { 0x03, 0x74, 0x04, 0x04, 0x04, 0x35, 0x35, 0x64, 0x64, 0x64, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09 };
+    unsigned int data_size_pos = 24;
 
-    // Call byte_compress
-    unsigned int new_size = byte_compress(data_ptr, data_size);
-    cout << "The new buffer has a size of: " << new_size << endl << "Compared to a previous size of: " << data_size << endl;
+    // Data before the call negative path
+    BYTE data_ptr_neg[] = { 0x03, 0x74, 0x04, 0x04, 0x04, 0x35, 0x35, 0x64, 0x64, 0x64, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00, 0x56, 0x45, 0x56, 0x56, 0x56, 0x09, 0x09, 0x09 };
+    unsigned int data_size_neg = 0;
 
+    // Call byte_compress and perform positive path testing 
+    unsigned int new_size = byte_compress(data_ptr_pos, data_size_pos);
+    
+    cout << "The new buffer has a size of: " << new_size << endl << "Compared to a previous size of: " << data_size_pos << endl;
     for (unsigned int i = 0; i < new_size; i++)
-        cout << (uint64_t)data_ptr[i] << endl;
+        cout << (uint64_t)data_ptr_pos[i] << " ";
+    cout << endl;
+
+    // Assert that the correct size was created from known data
+    assert(new_size == 16);
+
+    // Call byte_compress and perform negative path testing
+    new_size = byte_compress(data_ptr_neg, data_size_neg);
+
+    cout << "The new buffer has a size of: " << new_size << endl << "Compared to a previous size of: " << data_size_neg << endl;
+    for (unsigned int i = 0; i < new_size; i++)
+        cout << (uint64_t)data_ptr_neg[i] << " ";
+    cout << endl;
+
+    // Assert that algorithm returned expected zero value when zero size was input
+    assert(new_size == 0);
 }
